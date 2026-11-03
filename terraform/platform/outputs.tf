@@ -32,3 +32,13 @@ output "application_image" {
   description = "Docker image used by the application"
   value       = var.application_image
 }
+
+output "application_service" {
+  description = "Internal Kubernetes service name"
+  value       = kubernetes_service_v1.application.metadata[0].name
+}
+
+output "application_service_cluster_ip" {
+  description = "Internal ClusterIP assigned to the application"
+  value       = kubernetes_service_v1.application.spec[0].cluster_ip
+}

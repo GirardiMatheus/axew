@@ -96,3 +96,78 @@ resource "kubernetes_deployment_v1" "application" {
     }
   }
 }
+
+resource "kubernetes_service_v1" "application" {
+  metadata {
+    name      = "axew-api"
+    namespace = kubernetes_namespace_v1.platform.metadata[0].name
+
+    labels = {
+      app = "axew-api"
+    }
+  }
+
+  spec {
+    type = "ClusterIP"
+
+    selector = {
+      app = "axew-api"
+    }
+
+    port {
+      name        = "http"
+      port        = 80
+      target_port = "http"
+      protocol    = "TCP"
+    }
+  }
+}
+
+resource "helm_release" "traefik" {
+  name       = "traefik"
+  repository = "https://traefik.github.io/charts"
+  chart      = "traefik"
+  version    = "42.3.0"
+
+  namespace        = "traefik"
+  create_namespace = true
+
+  values = [
+    file("${path.module}/traefik-values.yaml")
+  ]
+
+  wait    = true
+  timeout = 300
+}
+
+resource "kubernetes_ingress_v1" "application" {
+  metadata {
+    name      = "axew-api"
+    namespace = kubernetes_namespace_v1.platform.metadata[0].name
+  }
+
+  spec {
+    ingress_class_name = "traefik"
+
+    rule {
+      host = "platform.local"
+
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+
+          backend {
+            service {
+              name = kubernetes_service_v1.application.metadata[0].name
+
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
