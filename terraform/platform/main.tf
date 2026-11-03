@@ -317,3 +317,105 @@ resource "kubernetes_horizontal_pod_autoscaler_v2" "application" {
     }
   }
 }
+
+resource "helm_release" "monitoring_stack" {
+  name       = "kube-prometheus-stack"
+  repository = "https://prometheus-community.github.io/helm-charts"
+  chart      = "kube-prometheus-stack"
+  version    = "92.10.0"
+
+  namespace        = "monitoring"
+  create_namespace = true
+
+  values = [
+    file("${path.module}/../../monitoring/values.yaml")
+  ]
+
+  wait    = true
+  timeout = 600
+}
+
+resource "kubernetes_manifest" "application_monitor" {
+  manifest = {
+    apiVersion = "monitoring.coreos.com/v1"
+    kind       = "ServiceMonitor"
+
+    metadata = {
+      name      = "axew-api"
+      namespace = kubernetes_namespace_v1.platform.metadata[0].name
+
+      labels = {
+        app        = "axew-api"
+        managed-by = "terraform"
+      }
+    }
+
+    spec = {
+      selector = {
+        matchLabels = {
+          app = "axew-api"
+        }
+      }
+
+      namespaceSelector = {
+        matchNames = [
+          "devops-platform"
+        ]
+      }
+
+      endpoints = [
+        {
+          port     = "http"
+          path     = "/metrics"
+          interval = "15s"
+        }
+      ]
+    }
+  }
+
+  depends_on = [
+    kubernetes_service_v1.application
+  ]
+}
+
+resource "kubernetes_config_map_v1" "grafana_axew_dashboard" {
+  metadata {
+    name      = "grafana-axew-api-dashboard"
+    namespace = "monitoring"
+
+    labels = {
+      grafana_dashboard = "1"
+      app               = "axew"
+      managed-by        = "terraform"
+    }
+  }
+
+  data = {
+    "axew-api.json" = file("${path.module}/../../monitoring/dashboards/axew-api.json")
+  }
+
+  depends_on = [
+    helm_release.monitoring_stack
+  ]
+}
+
+resource "kubernetes_config_map_v1" "grafana_hpa_dashboard" {
+  metadata {
+    name      = "grafana-kubernetes-hpa-dashboard"
+    namespace = "monitoring"
+
+    labels = {
+      grafana_dashboard = "1"
+      app               = "axew"
+      managed-by        = "terraform"
+    }
+  }
+
+  data = {
+    "kubernetes-hpa.json" = file("${path.module}/../../monitoring/dashboards/kubernetes-hpa.json")
+  }
+
+  depends_on = [
+    helm_release.monitoring_stack
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "uid": "axew-hpa",
+  "title": "Axew - Kubernetes Autoscaling",
+  "tags": ["axew", "kubernetes", "hpa", "autoscaling"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Current Replicas",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"devops-platform\", horizontalpodautoscaler=\"axew-api\"}",
+          "legendFormat": "Current",
+          "refId": "A"
+        },
+        {
+          "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"devops-platform\", horizontalpodautoscaler=\"axew-api\"}",
+          "legendFormat": "Desired",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Replica Limits",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "kube_horizontalpodautoscaler_spec_min_replicas{namespace=\"devops-platform\", horizontalpodautoscaler=\"axew-api\"}",
+          "legendFormat": "Minimum",
+          "refId": "A"
+        },
+        {
+          "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"devops-platform\", horizontalpodautoscaler=\"axew-api\"}",
+          "legendFormat": "Maximum",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Application CPU Usage (%)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "100 * avg(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"devops-platform\",pod=~\"axew-api-.*\",container=\"axew-api\"}[5m])) / sum by (pod) (kube_pod_container_resource_requests{namespace=\"devops-platform\",pod=~\"axew-api-.*\",container=\"axew-api\",resource=\"cpu\"}))",
+          "legendFormat": "Average CPU utilization",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "HPA Status",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "kube_horizontalpodautoscaler_status_condition{namespace=\"devops-platform\", horizontalpodautoscaler=\"axew-api\", condition=\"ScalingActive\", status=\"true\"}",
+          "legendFormat": "Scaling Active",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
