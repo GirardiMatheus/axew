@@ -27,7 +27,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(axew_http_requests_total[5m]))",
+          "expr": "sum(rate(http_requests_total[5m]))",
           "legendFormat": "Requests/s",
           "refId": "A"
         }
@@ -49,7 +49,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (status) (rate(axew_http_requests_total[5m]))",
+          "expr": "sum by (status) (rate(http_requests_total[5m]))",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -71,7 +71,7 @@
       },
       "targets": [
         {
-          "expr": "sum(axew_http_requests_total)",
+          "expr": "sum(http_requests_total)",
           "legendFormat": "Total Requests",
           "refId": "A"
         }

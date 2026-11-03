@@ -13,7 +13,7 @@ variable "kubernetes_context" {
 variable "application_image" {
   description = "Docker image used by the Axew application"
   type        = string
-  default     = "axew-api:1.0"
+  default     = "axew-api:1.1"
 }
 
 variable "replicas" {

@@ -243,7 +243,7 @@ resource "kubernetes_config_map_v1" "application" {
 
   data = {
     APP_NAME    = "axew-api"
-    APP_VERSION = "1.0.0"
+    APP_VERSION = "1.1.0"
     LOG_LEVEL   = "INFO"
   }
 }
@@ -413,6 +413,27 @@ resource "kubernetes_config_map_v1" "grafana_hpa_dashboard" {
 
   data = {
     "kubernetes-hpa.json" = file("${path.module}/../../monitoring/dashboards/kubernetes-hpa.json")
+  }
+
+  depends_on = [
+    helm_release.monitoring_stack
+  ]
+}
+
+resource "kubernetes_config_map_v1" "grafana_kubernetes_overview_dashboard" {
+  metadata {
+    name      = "grafana-kubernetes-overview-dashboard"
+    namespace = "monitoring"
+
+    labels = {
+      grafana_dashboard = "1"
+      app               = "axew"
+      managed-by        = "terraform"
+    }
+  }
+
+  data = {
+    "kubernetes-overview.json" = file("${path.module}/../../monitoring/dashboards/kubernetes-overview.json")
   }
 
   depends_on = [

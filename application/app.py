@@ -26,7 +26,7 @@ logger = logging.getLogger(APP_NAME)
 
 # Prometheus metrics
 HTTP_REQUESTS_TOTAL = Counter(
-    "axew_http_requests_total",
+    "http_requests_total",
     "Total number of HTTP requests",
     ["method", "endpoint", "status"],
 )
