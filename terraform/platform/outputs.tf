@@ -42,3 +42,8 @@ output "application_service_cluster_ip" {
   description = "Internal ClusterIP assigned to the application"
   value       = kubernetes_service_v1.application.spec[0].cluster_ip
 }
+
+output "application_hpa_name" {
+  description = "Name of the application Horizontal Pod Autoscaler"
+  value       = kubernetes_horizontal_pod_autoscaler_v2.application.metadata[0].name
+}

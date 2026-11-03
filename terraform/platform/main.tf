@@ -26,6 +26,12 @@ resource "kubernetes_deployment_v1" "application" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [
+      spec[0].replicas
+    ]
+  }
+
   spec {
     replicas = var.replicas
 
@@ -257,5 +263,57 @@ resource "kubernetes_secret_v1" "application" {
 
   data = {
     DEMO_API_TOKEN = base64encode(var.demo_secret_value)
+  }
+}
+
+resource "helm_release" "metrics_server" {
+  name       = "metrics-server"
+  repository = "https://kubernetes-sigs.github.io/metrics-server/"
+  chart      = "metrics-server"
+  version    = "3.14.0"
+
+  namespace = "kube-system"
+
+  values = [
+    file("${path.module}/metrics-server-values.yaml")
+  ]
+
+  wait    = true
+  timeout = 300
+}
+
+resource "kubernetes_horizontal_pod_autoscaler_v2" "application" {
+  metadata {
+    name      = "axew-api"
+    namespace = kubernetes_namespace_v1.platform.metadata[0].name
+
+    labels = {
+      app        = "axew-api"
+      managed-by = "terraform"
+    }
+  }
+
+  spec {
+    min_replicas = 2
+    max_replicas = 5
+
+    scale_target_ref {
+      api_version = "apps/v1"
+      kind        = "Deployment"
+      name        = kubernetes_deployment_v1.application.metadata[0].name
+    }
+
+    metric {
+      type = "Resource"
+
+      resource {
+        name = "cpu"
+
+        target {
+          type                = "Utilization"
+          average_utilization = 70
+        }
+      }
+    }
   }
 }
