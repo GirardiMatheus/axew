@@ -26,3 +26,9 @@ variable "replicas" {
     error_message = "Replicas must be between 1 and 5."
   }
 }
+
+variable "demo_secret_value" {
+  description = "Dummy secret value used to demonstrate Kubernetes Secrets"
+  type        = string
+  sensitive   = true
+}

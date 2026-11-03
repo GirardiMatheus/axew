@@ -43,15 +43,60 @@ resource "kubernetes_deployment_v1" "application" {
       }
 
       spec {
+        # Pod Security Context
+        security_context {
+          run_as_non_root = true
+          run_as_user     = 10001
+          run_as_group    = 10001
+          fs_group        = 10001
+
+          seccomp_profile {
+            type = "RuntimeDefault"
+          }
+        }
+
         container {
           name              = "axew-api"
           image             = var.application_image
           image_pull_policy = "IfNotPresent"
 
+          # Environment variables from ConfigMap
+          env_from {
+            config_map_ref {
+              name = kubernetes_config_map_v1.application.metadata[0].name
+            }
+          }
+
+          # Environment variables from Secret
+          env_from {
+            secret_ref {
+              name = kubernetes_secret_v1.application.metadata[0].name
+            }
+          }
+
+          # Container Security Context
+          security_context {
+            allow_privilege_escalation = false
+            privileged                 = false
+            read_only_root_filesystem  = true
+            run_as_non_root            = true
+            run_as_user                = 10001
+
+            capabilities {
+              drop = ["ALL"]
+            }
+          }
+
           port {
             name           = "http"
             container_port = 8080
             protocol       = "TCP"
+          }
+
+          # Temporary writable directory
+          volume_mount {
+            name       = "tmp"
+            mount_path = "/tmp"
           }
 
           liveness_probe {
@@ -91,6 +136,13 @@ resource "kubernetes_deployment_v1" "application" {
               memory = "256Mi"
             }
           }
+        }
+
+        # Temporary volume for writable application files
+        volume {
+          name = "tmp"
+
+          empty_dir {}
         }
       }
     }
@@ -169,5 +221,41 @@ resource "kubernetes_ingress_v1" "application" {
         }
       }
     }
+  }
+}
+
+resource "kubernetes_config_map_v1" "application" {
+  metadata {
+    name      = "axew-api-config"
+    namespace = kubernetes_namespace_v1.platform.metadata[0].name
+
+    labels = {
+      app        = "axew-api"
+      managed-by = "terraform"
+    }
+  }
+
+  data = {
+    APP_NAME    = "axew-api"
+    APP_VERSION = "1.0.0"
+    LOG_LEVEL   = "INFO"
+  }
+}
+
+resource "kubernetes_secret_v1" "application" {
+  metadata {
+    name      = "axew-api-secret"
+    namespace = kubernetes_namespace_v1.platform.metadata[0].name
+
+    labels = {
+      app        = "axew-api"
+      managed-by = "terraform"
+    }
+  }
+
+  type = "Opaque"
+
+  data = {
+    DEMO_API_TOKEN = base64encode(var.demo_secret_value)
   }
 }
