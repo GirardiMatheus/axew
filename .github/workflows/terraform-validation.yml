@@ -1,0 +1,74 @@
+name: Infrastructure Validation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infrastructure-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform-format:
+    name: Terraform Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.17.1
+
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive
+
+  terraform-validate:
+    name: Validate ${{ matrix.directory }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        directory:
+          - terraform/cluster
+          - terraform/platform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.17.1
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v6
+
+      - name: Terraform Init
+        working-directory: ${{ matrix.directory }}
+        run: terraform init -backend=false -input=false
+
+      - name: Terraform Validate
+        working-directory: ${{ matrix.directory }}
+        run: terraform validate -no-color
+
+      - name: Initialize TFLint
+        run: tflint --init --config="$GITHUB_WORKSPACE/.tflint.hcl"
+
+      - name: Run TFLint
+        run: |
+          tflint \
+            --chdir="$GITHUB_WORKSPACE/${{ matrix.directory }}" \
+            --config="$GITHUB_WORKSPACE/.tflint.hcl"
