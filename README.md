@@ -1,4 +1,16 @@
-# Axew
+<p align="center">
+  <img
+    src="https://img.pokemondb.net/sprites/black-white/normal/axew.png"
+    alt="Axew"
+    width="80"
+    align="absmiddle"
+  >
+  <strong><font size="16">AXEW</font></strong>
+</p>
+
+<p align="center">
+  Infrastructure as Code · Kubernetes · DevOps · SRE
+</p>
 
 ### Infrastructure as Code · Kubernetes · DevOps · SRE
 
